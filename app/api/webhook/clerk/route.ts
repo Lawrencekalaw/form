@@ -1,8 +1,8 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
-import { clerkClient, WebhookEvent } from '@clerk/nextjs/server'
+import { WebhookEvent } from '@clerk/nextjs/server'
 import { createUser, deleteUser, updateUser } from '@/lib/actions/user.actions'
-
+import { clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
@@ -59,30 +59,32 @@ export async function POST(req: Request) {
     const user = {
         clerkId: id,
         email: email_addresses[0].email_address,
-        username: username!,
-        firstName: first_name,
-        lastName: last_name,
-        photo: image_url,
-    } 
-
-    const newUser = await createUser(user);
-    if(newUser) {
-      await clerkClient.users.updateUserMetadata(id, {
-        publicMetadata: {
-          userId: newUser._id
-        }
-      })
+        username: username || "default_username", 
+        firstName: first_name || "Default First Name", 
+        lastName: last_name || "Default Last Name", 
+        photo: image_url || "default_photo_url",  
     }
+    
+const client = await clerkClient(); 
+const newUser = await createUser(user);
+if(newUser) {
+  await client.users.updateUserMetadata(id, {
+    publicMetadata: {
+      userId: newUser._id
+    }
+  })
+}
     return NextResponse.json({ message: 'OK', user: newUser})
   }
   if (eventType === 'user.updated') {
     const {id, image_url, first_name, last_name, username } = evt.data
 
     const user = {
-      firstName: first_name,
-      lastName: last_name,
-      username: username!,
-      photo: image_url,
+      
+        username: username || "default_username", 
+        firstName: first_name || "Default First Name",
+        lastName: last_name || "Default Last Name", 
+        photo: image_url || "default_photo_url", 
     }
 
     const updatedUser = await updateUser(id, user)
